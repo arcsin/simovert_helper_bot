@@ -1,9 +1,12 @@
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
+import sqlite3
 
 from config import TOKEN
 
+database_name = 'simovert_compendium.db'
+home_dir = "/home/pi/simovert_helper_bot/"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
@@ -22,14 +25,23 @@ async def process_help_command(message: types.Message):
 @dp.message_handler()
 async def message(msg: types.Message):
 	if msg.text == "F001":
-		name = "Сигал обратной связи главного контактора"
-		cause = "Еслинастроенсигналобратнойсвязиглавногоконтактораипослесигналавключенияпитания, втечениевремени, установленноговР600, оннеприсходит. Вслучаесинхронныхдвигателейсвнешнимвозбуждением(P095 = 12), отсутствуетконтрольныйсигналдлямодулятокавозбуждения."
-		counter_measure = "P591 Сообщениеконтактора. Значениепараметрадолжносоответствоватьподключениюобратнойсвязиглавногоконтактора. Проверьтецепьобратнойсвязиглавногоконтактора  (илиобратнуюсвязьмодулятокавозбуждениявслучаесинхронныхдвигателей)."
-		answer = "**" + name + "**" + "\n" + cause + "\n\n" + counter_measure
+		SQL = "SELECT Name, Cause, Counter_measure FROM main WHERE (Type = 'F' AND Number = 1 AND Language = 'ru')"
+		cur.execute(SQL)
+		rows = cur.fetchall()
+		name = rows[0][0]
+		cause = rows[0][1]
+		counter_measure = rows[0][2]
+		
+		answer = "*" + name + "*" + "\n" + "*Причина:*" + cause + "\n" + "*Способ устранения:*" + counter_measure
 	else:
 		answer = "информации пока нет"
-	await bot.send_message(msg.from_user.id, answer)
+	await bot.send_message(msg.from_user.id, answer, parse_mode= "Markdown")
 
 
 if __name__ == '__main__':
+	#Connect to database
+	con = sqlite3.connect(home_dir + database_name)
+	cur = con.cursor()
+	
 	executor.start_polling(dp)
+	
