@@ -3,6 +3,8 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 import sqlite3
 
+import re
+
 from config import TOKEN
 
 database_name = 'simovert_compendium.db'
@@ -24,17 +26,25 @@ async def process_help_command(message: types.Message):
 
 @dp.message_handler()
 async def message(msg: types.Message):
-	if msg.text == "F001":
-		SQL = "SELECT Name, Cause, Counter_measure FROM main WHERE (Type = 'F' AND Number = 1 AND Language = 'ru')"
-		cur.execute(SQL)
-		rows = cur.fetchall()
-		name = rows[0][0]
-		cause = rows[0][1]
-		counter_measure = rows[0][2]
+	request = msg.text.strip()
+	request = request.upper()
+	print (request)	
+	if request.startswith('FF'): type_message = "FF"
+	elif request.startswith('F'): type_message = "F"
+	elif request.startswith('A'): type_message = "A"
+	else: return 
+	Number = int(re.sub("\D", "", request))
+	
+	SQL = "SELECT Name, Cause, Counter_measure FROM main WHERE (Type = '{0}' AND Number = {1} AND Language = '{2}')".format(type_message, Number, 'ru')
+	cur.execute(SQL)
+	rows = cur.fetchall()
+	if rows.count == 0: return
+	name = rows[0][0]
+	cause = rows[0][1]
+	counter_measure = rows[0][2]
 		
-		answer = "*" + name + "*" + "\n" + "*Причина:*" + cause + "\n" + "*Способ устранения:*" + counter_measure
-	else:
-		answer = "информации пока нет"
+	answer = "*" + name + "*" + "\n" + "*Причина:*" + cause + "\n" + "*Способ устранения:*" + counter_measure
+		
 	await bot.send_message(msg.from_user.id, answer, parse_mode= "Markdown")
 
 
